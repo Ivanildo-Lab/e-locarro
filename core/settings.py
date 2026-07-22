@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-4nr#4er14x58awmm1a^6di@_+%z#p2elug3y=ub(@1ow=%r&at
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['elocarro-geficogestor.pythonanywhere.com']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'elocarro-geficogestor.pythonanywhere.com']
 
 AUTH_USER_MODEL = 'core.Usuario'
 

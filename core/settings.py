@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-4nr#4er14x58awmm1a^6di@_+%z#p2elug3y=ub(@1ow=%r&at
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['elocarro-geficogestor.pythonanywhere.com']
 
 AUTH_USER_MODEL = 'core.Usuario'
 
@@ -149,6 +149,8 @@ STATICFILES_DIRS = [
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
+STATIC_ROOT = BASE_DIR / 'static_collected'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

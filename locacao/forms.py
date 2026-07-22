@@ -181,7 +181,7 @@ class ManutencaoVeiculoForm(forms.ModelForm):
     class Meta:
         model = ManutencaoVeiculo
         fields = '__all__'
-        exclude = ['empresa', 'programa']
+        exclude = ['empresa']
         widgets = {
             'data_entrada': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
             'data_saida': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
@@ -207,9 +207,10 @@ class ManutencaoVeiculoForm(forms.ModelForm):
             self.fields['veiculo'].queryset = Veiculo.objects.filter(
                 empresa=self.user.empresa
             )
-            self.fields['programa'].queryset = ProgramaManutencao.objects.filter(
-                empresa=self.user.empresa, ativo=True
-            )
+            if 'programa' in self.fields:
+                self.fields['programa'].queryset = ProgramaManutencao.objects.filter(
+                    empresa=self.user.empresa, ativo=True
+                )
 
 
 class ProgramaManutencaoForm(forms.ModelForm):

@@ -1,10 +1,11 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Count
 from django.utils import timezone
 from datetime import timedelta
 from cadastros.models import Cadastro
 from financeiro.models import Lancamento, Conta
+from locacao.models import Veiculo, ContratoLocacao, ContratoVenda, Vendedor, ManutencaoVeiculo
 
 # ==========================================
 # LANDING PAGE (Tela Inicial)
@@ -93,6 +94,63 @@ def dashboard(request):
         dados_receita.append(float(r))
         dados_despesa.append(abs(float(d)))
 
+    # 5. DADOS DE LOCAÇÃO
+    locacoes_ativas = ContratoLocacao.objects.filter(
+        empresa=empresa, status='ATIVO'
+    ).count()
+
+    locacoes_mes = ContratoLocacao.objects.filter(
+        empresa=empresa,
+        data_reserva__month=mes_atual,
+        data_reserva__year=ano_atual
+    ).count()
+
+    receita_locacoes_mes = ContratoLocacao.objects.filter(
+        empresa=empresa,
+        status='FINALIZADO',
+        data_devolucao_real__month=mes_atual,
+        data_devolucao_real__year=ano_atual
+    ).aggregate(Sum('valor_total_locacao'))['valor_total_locacao__sum'] or 0
+
+    ultimas_locacoes = ContratoLocacao.objects.filter(
+        empresa=empresa
+    ).select_related('cliente', 'veiculo').order_by('-data_reserva')[:5]
+
+    # 6. DADOS DE VENDA
+    vendas_mes = ContratoVenda.objects.filter(
+        empresa=empresa,
+        data_venda__month=mes_atual,
+        data_venda__year=ano_atual
+    ).count()
+
+    receita_vendas_mes = ContratoVenda.objects.filter(
+        empresa=empresa,
+        status='PAGO',
+        data_venda__month=mes_atual,
+        data_venda__year=ano_atual
+    ).aggregate(Sum('valor_venda'))['valor_venda__sum'] or 0
+
+    ultimas_vendas = ContratoVenda.objects.filter(
+        empresa=empresa
+    ).select_related('cliente', 'veiculo', 'vendedor').order_by('-data_venda')[:5]
+
+    # 7. ESTOQUE DE VEÍCULOS
+    veiculos_total = Veiculo.objects.filter(empresa=empresa).count()
+    veiculos_disponiveis = Veiculo.objects.filter(empresa=empresa, status='DISPONIVEL').count()
+    veiculos_alugados = Veiculo.objects.filter(empresa=empresa, status='ALUGADO').count()
+    veiculos_vendidos = Veiculo.objects.filter(empresa=empresa, status='VENDIDO').count()
+    veiculos_manutencao = Veiculo.objects.filter(empresa=empresa, status='MANUTENCAO').count()
+
+    # 8. TOP VENDEDORES
+    top_vendedores = Vendedor.objects.filter(
+        empresa=empresa, situacao='ATIVO'
+    ).order_by('-valor_total_vendas')[:5]
+
+    # 9. MANUTENÇÕES PENDENTES
+    manutencoes_pendentes = ManutencaoVeiculo.objects.filter(
+        empresa=empresa, data_saida__isnull=True
+    ).select_related('veiculo')[:5]
+
     context = {
         'total_clientes': total_clientes,
         'ativos': ativos,
@@ -104,6 +162,25 @@ def dashboard(request):
         'grafico_labels': labels_grafico,
         'grafico_receita': dados_receita,
         'grafico_despesa': dados_despesa,
+        # Locação
+        'locacoes_ativas': locacoes_ativas,
+        'locacoes_mes': locacoes_mes,
+        'receita_locacoes_mes': receita_locacoes_mes,
+        'ultimas_locacoes': ultimas_locacoes,
+        # Vendas
+        'vendas_mes': vendas_mes,
+        'receita_vendas_mes': receita_vendas_mes,
+        'ultimas_vendas': ultimas_vendas,
+        # Veículos
+        'veiculos_total': veiculos_total,
+        'veiculos_disponiveis': veiculos_disponiveis,
+        'veiculos_alugados': veiculos_alugados,
+        'veiculos_vendidos': veiculos_vendidos,
+        'veiculos_manutencao': veiculos_manutencao,
+        # Vendedores
+        'top_vendedores': top_vendedores,
+        # Manutenção
+        'manutencoes_pendentes': manutencoes_pendentes,
     }
     
     return render(request, 'web/dashboard.html', context)

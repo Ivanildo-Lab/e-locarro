@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block titulo_cabecalho %}Veículos{% endblock %}
+{% block subtitulo_cabecalho %}Estoque de Veículos{% endblock %}
+{% block breadcrumb %}Veículos{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded shadow border-t-4 border-blue-500">
+    
+    <!-- HEADER E BOTÕES -->
+    <div class="p-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
+        <h3 class="text-lg font-semibold text-gray-700">Estoque de Veículos</h3>
+        <div class="flex gap-2">
+            <a href="{% url 'locacao:lista_tipos_veiculo' %}" class="text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded text-sm font-medium transition">
+                <i class="fa fa-tags mr-1"></i> Grupos
+            </a>
+            <a href="{% url 'locacao:novo_veiculo' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition shadow flex items-center">
+                <i class="fa fa-plus-circle mr-2"></i> Novo Veículo
+            </a>
+        </div>
+    </div>
+
+    <!-- BARRA DE FILTROS -->
+    <form method="GET" class="p-4 bg-gray-50 border-b border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+        
+        <!-- Busca Texto -->
+        <div class="md:col-span-5">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Buscar</label>
+            <input type="text" name="q" value="{{ filtro_q|default:'' }}" placeholder="Placa, Modelo ou Marca..." class="w-full border-gray-300 rounded p-2 text-sm focus:ring-blue-500 focus:border-blue-500 border shadow-sm">
+        </div>
+
+        <!-- Filtro Grupo -->
+        <div class="md:col-span-3">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Grupo</label>
+            <select name="grupo" class="w-full border-gray-300 rounded p-2 text-sm border shadow-sm bg-white">
+                <option value="">Todos</option>
+                {% for g in grupos %}
+                    <option value="{{ g.id }}" {% if filtro_grupo == g.id|stringformat:"s" %}selected{% endif %}>{{ g.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Filtro Status -->
+        <div class="md:col-span-2">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Status</label>
+            <select name="status" class="w-full border-gray-300 rounded p-2 text-sm border shadow-sm bg-white">
+                <option value="">Todos</option>
+                <option value="DISPONIVEL" {% if filtro_status == 'DISPONIVEL' %}selected{% endif %}>Disponível</option>
+                <option value="ALUGADO" {% if filtro_status == 'ALUGADO' %}selected{% endif %}>Alugado</option>
+                <option value="VENDIDO" {% if filtro_status == 'VENDIDO' %}selected{% endif %}>Vendido</option>
+                <option value="MANUTENCAO" {% if filtro_status == 'MANUTENCAO' %}selected{% endif %}>Manutenção</option>
+            </select>
+        </div>
+
+        <!-- Botão Filtrar -->
+        <div class="md:col-span-2">
+            <button type="submit" class="w-full bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800 transition shadow">
+                <i class="fa fa-search mr-1"></i> Filtrar
+            </button>
+        </div>
+    </form>
+
+    <!-- TABELA -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Veículo</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Placa</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grupo</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">KM</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Tanque</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                {% for v in veiculos %}
+                <tr class="hover:bg-blue-50 transition">
+                    
+                    <!-- Veículo -->
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                {% if v.foto %}
+                                    <img class="h-10 w-10 rounded object-cover border border-gray-300" src="{{ v.foto.url }}">
+                                {% else %}
+                                    <div class="h-10 w-10 rounded bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs border border-gray-200">
+                                        <i class="fa fa-car"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="ml-3">
+                                <div class="font-bold text-gray-900">{{ v.marca }} {{ v.modelo }}</div>
+                                <div class="text-xs text-gray-500">{{ v.ano_fabricacao }}/{{ v.ano_modelo|default:v.ano_fabricacao }} · {{ v.cor }}</div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Placa -->
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="font-mono font-bold text-gray-800 bg-gray-100 px-2 py-1 rounded">{{ v.placa }}</span>
+                    </td>
+
+                    <!-- Grupo -->
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            {{ v.grupo }}
+                        </span>
+                    </td>
+
+                    <!-- KM -->
+                    <td class="px-4 py-3 whitespace-nowrap text-center text-gray-700">
+                        {{ v.km_atual|floatformat:0 }}
+                    </td>
+
+                    <!-- Tanque -->
+                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                        <div class="flex items-center justify-center">
+                            {% for i in "12345678" %}
+                                {% if forloop.counter <= v.nivel_tanque %}
+                                    <div class="w-2 h-4 bg-green-500 rounded-sm mx-0.5"></div>
+                                {% else %}
+                                    <div class="w-2 h-4 bg-gray-200 rounded-sm mx-0.5"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </td>
+
+                    <!-- Status -->
+                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                        {% if v.status == 'DISPONIVEL' %}
+                            <span class="text-green-600 font-bold text-xs"><i class="fa fa-check-circle mr-1"></i>Disponível</span>
+                        {% elif v.status == 'ALUGADO' %}
+                            <span class="text-yellow-600 font-bold text-xs"><i class="fa fa-clock mr-1"></i>Alugado</span>
+                        {% elif v.status == 'VENDIDO' %}
+                            <span class="text-blue-600 font-bold text-xs"><i class="fa fa-dollar-sign mr-1"></i>Vendido</span>
+                        {% else %}
+                            <span class="text-red-600 font-bold text-xs"><i class="fa fa-wrench mr-1"></i>Manutenção</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Ações -->
+                    <td class="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">
+                        <div class="flex justify-center space-x-1">
+                            <a href="{% url 'locacao:editar_veiculo' v.id %}" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 p-2 rounded-full transition hover:bg-indigo-100" title="Editar">
+                                <i class="fa fa-pencil-alt"></i>
+                            </a>
+                            <a href="{% url 'locacao:excluir_veiculo' v.id %}" onclick="return confirm('Tem certeza que deseja excluir {{ v }}?')" class="text-red-600 hover:text-red-900 bg-red-50 p-2 rounded-full transition hover:bg-red-100" title="Excluir">
+                                <i class="fa fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-10 text-center text-gray-500">
+                        Nenhum veículo encontrado com estes filtros.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

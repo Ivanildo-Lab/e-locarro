@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block titulo_cabecalho %}Contratos de Locação{% endblock %}
+{% block subtitulo_cabecalho %}Gestão de Contratos{% endblock %}
+{% block breadcrumb %}Contratos{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded shadow border-t-4 border-blue-500">
+    
+    <!-- HEADER E BOTÕES -->
+    <div class="p-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
+        <h3 class="text-lg font-semibold text-gray-700">Contratos de Locação</h3>
+        <a href="{% url 'locacao:novo_contrato' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition shadow flex items-center">
+            <i class="fa fa-plus-circle mr-2"></i> Novo Contrato
+        </a>
+    </div>
+
+    <!-- BARRA DE FILTROS -->
+    <form method="GET" class="p-4 bg-gray-50 border-b border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+        
+        <div class="md:col-span-6">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Buscar</label>
+            <input type="text" name="q" value="{{ filtro_q|default:'' }}" placeholder="Nº Contrato, Cliente ou Placa..." class="w-full border-gray-300 rounded p-2 text-sm focus:ring-blue-500 focus:border-blue-500 border shadow-sm">
+        </div>
+
+        <div class="md:col-span-4">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Status</label>
+            <select name="status" class="w-full border-gray-300 rounded p-2 text-sm border shadow-sm bg-white">
+                <option value="">Todos</option>
+                <option value="ABERTO" {% if filtro_status == 'ABERTO' %}selected{% endif %}>Aberto (Reservado)</option>
+                <option value="ATIVO" {% if filtro_status == 'ATIVO' %}selected{% endif %}>Ativo (Retirado)</option>
+                <option value="FINALIZADO" {% if filtro_status == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
+                <option value="CANCELADO" {% if filtro_status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+            </select>
+        </div>
+
+        <div class="md:col-span-2">
+            <button type="submit" class="w-full bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800 transition shadow">
+                <i class="fa fa-search mr-1"></i> Filtrar
+            </button>
+        </div>
+    </form>
+
+    <!-- TABELA -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nº Contrato</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Veículo</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Período</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Valor/Dia</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                {% for c in contratos %}
+                <tr class="hover:bg-blue-50 transition">
+                    
+                    <!-- Nº Contrato -->
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="font-mono font-bold text-gray-800">{{ c.numero_contrato }}</span>
+                    </td>
+
+                    <!-- Cliente -->
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="font-medium text-gray-900">{{ c.cliente.nome }}</div>
+                        <div class="text-xs text-gray-500">{{ c.cliente.cpf_cnpj }}</div>
+                    </td>
+
+                    <!-- Veículo -->
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="font-medium text-gray-900">{{ c.veiculo.marca }} {{ c.veiculo.modelo }}</div>
+                        <div class="text-xs text-gray-500 font-mono">{{ c.veiculo.placa }}</div>
+                    </td>
+
+                    <!-- Período -->
+                    <td class="px-4 py-3 whitespace-nowrap text-center text-xs">
+                        {% if c.data_saida %}
+                            <div>{{ c.data_saida|date:"d/m/Y" }}</div>
+                            <div class="text-gray-400">até {{ c.data_retorno_prevista|date:"d/m/Y" }}</div>
+                        {% else %}
+                            <div>Reservado</div>
+                            <div class="text-gray-400">Saída: {{ c.data_retorno_prevista|date:"d/m/Y" }}</div>
+                        {% endif %}
+                    </td>
+
+                    <!-- Valor/Dia -->
+                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                        <span class="font-bold text-green-700">{{ c.valor_total_dia|br_currency }}</span>
+                    </td>
+
+                    <!-- Status -->
+                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                        {% if c.status == 'ABERTO' %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                <i class="fa fa-clock mr-1"></i> Aberto
+                            </span>
+                        {% elif c.status == 'ATIVO' %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                <i class="fa fa-check-circle mr-1"></i> Ativo
+                            </span>
+                        {% elif c.status == 'FINALIZADO' %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                <i class="fa fa-flag-checkered mr-1"></i> Finalizado
+                            </span>
+                        {% else %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                <i class="fa fa-times-circle mr-1"></i> Cancelado
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Ações -->
+                    <td class="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">
+                        <div class="flex justify-center space-x-1">
+                            {% if c.status == 'ABERTO' %}
+                                <a href="{% url 'locacao:editar_contrato' c.id %}" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 p-2 rounded-full transition" title="Editar">
+                                    <i class="fa fa-pencil-alt"></i>
+                                </a>
+                                <a href="{% url 'locacao:iniciar_contrato' c.id %}" onclick="return confirm('Iniciar contrato e registrar saída do veículo?')" class="text-green-600 hover:text-green-900 bg-green-50 p-2 rounded-full transition" title="Iniciar (Retirada)">
+                                    <i class="fa fa-play-circle"></i>
+                                </a>
+                                <a href="{% url 'locacao:cancelar_contrato' c.id %}" onclick="return confirm('Cancelar este contrato?')" class="text-red-600 hover:text-red-900 bg-red-50 p-2 rounded-full transition" title="Cancelar">
+                                    <i class="fa fa-ban"></i>
+                                </a>
+                            {% elif c.status == 'ATIVO' %}
+                                <a href="{% url 'locacao:devolucao_veiculo' c.id %}" class="text-green-600 hover:text-green-900 bg-green-50 p-2 rounded-full transition" title="Devolver Veículo">
+                                    <i class="fa fa-undo"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-10 text-center text-gray-500">
+                        Nenhum contrato encontrado com estes filtros.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

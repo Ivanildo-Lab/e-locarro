@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block titulo_cabecalho %}Dashboard{% endblock %}
+{% block subtitulo_cabecalho %}Visão Geral da Empresa{% endblock %}
+{% block breadcrumb %}Início{% endblock %}
+
+{% block content %}
+
+<!-- 1. CARDS DE KPI -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    
+    <!-- Card Azul: Clientes -->
+    <div class="bg-cyan-600 rounded-lg shadow-lg text-white relative overflow-hidden group">
+        <div class="p-5">
+            <!-- CORRIGIDO: Usa total_clientes -->
+            <h3 class="text-4xl font-bold">{{ total_clientes }}</h3>
+            <p class="font-medium opacity-90">Clientes Totais</p>
+        </div>
+        <div class="absolute right-4 top-6 opacity-25 group-hover:scale-110 transition duration-300">
+            <i class="fa fa-users text-6xl"></i>
+        </div>
+        <a href="{% url 'lista_clientes' %}" class="block bg-black/20 text-center py-2 text-sm hover:bg-black/30 transition">
+            Ver Detalhes <i class="fa fa-arrow-circle-right ml-1"></i>
+        </a>
+    </div>
+
+    <!-- Card Verde: Receita -->
+    <div class="bg-green-600 rounded-lg shadow-lg text-white relative overflow-hidden group">
+        <div class="p-5">
+            <h3 class="text-3xl font-bold flex items-baseline truncate">
+                <span class="text-lg mr-1">{{ receita_mensal|br_currency }}</span>
+            </h3>
+            <p class="font-medium opacity-90">Receita (Mês)</p>
+        </div>
+        <div class="absolute right-4 top-6 opacity-25 group-hover:scale-110 transition duration-300">
+            <i class="fa fa-dollar-sign text-6xl"></i>
+        </div>
+        <a href="{% url 'financeiro:lista_receber' %}" class="block bg-black/20 text-center py-2 text-sm hover:bg-black/30 transition">
+            Ver Recebimentos <i class="fa fa-arrow-circle-right ml-1"></i>
+        </a>
+    </div>
+
+    <!-- Card Vermelho: Despesas -->
+    <div class="bg-red-600 rounded-lg shadow-lg text-white relative overflow-hidden group">
+        <div class="p-5">
+            <h3 class="text-3xl font-bold flex items-baseline truncate">
+                <span class="text-lg mr-1">{{ despesa_mensal|br_currency }}</span>
+            </h3>
+            <p class="font-medium opacity-90">Despesas (Mês)</p>
+        </div>
+        <div class="absolute right-4 top-6 opacity-25 group-hover:scale-110 transition duration-300">
+            <i class="fa fa-trending-down text-6xl"></i>
+        </div>
+        <a href="{% url 'financeiro:lista_pagar' %}" class="block bg-black/20 text-center py-2 text-sm hover:bg-black/30 transition">
+            Ver Pagamentos <i class="fa fa-arrow-circle-right ml-1"></i>
+        </a>
+    </div>
+
+    <!-- Card Amarelo: Saldo -->
+    <div class="bg-yellow-500 rounded-lg shadow-lg text-white relative overflow-hidden group">
+        <div class="p-5">
+            <h3 class="text-3xl font-bold flex items-baseline truncate">
+                <span class="text-lg mr-1">{{ saldo|br_currency }}</span>
+            </h3>
+            <p class="font-medium opacity-90">Saldo do Mês</p>
+        </div>
+        <div class="absolute right-4 top-6 opacity-25 group-hover:scale-110 transition duration-300">
+            <i class="fa fa-balance-scale text-6xl"></i>
+        </div>
+        <a href="{% url 'financeiro:fluxo_caixa' %}" class="block bg-black/20 text-center py-2 text-sm hover:bg-black/30 transition">
+            Ver Fluxo <i class="fa fa-arrow-circle-right ml-1"></i>
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <!-- Gráfico -->
+    <div class="lg:col-span-2 bg-white rounded-lg shadow border-t-4 border-blue-500">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-700">
+                <i class="fa fa-chart-bar mr-2 text-blue-500"></i> Fluxo de Caixa (Últimos 6 Meses)
+            </h3>
+        </div>
+        <div class="p-6">
+            <canvas id="financeChart" height="250"></canvas>
+        </div>
+    </div>
+
+    <!-- Contas Atrasadas -->
+    <div class="bg-white rounded-lg shadow border-t-4 border-red-500">
+        <div class="p-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-700">
+                <i class="fa fa-exclamation-triangle mr-2 text-red-500"></i> Recebimentos Atrasados
+            </h3>
+        </div>
+        <div class="p-0">
+            <ul class="divide-y divide-gray-100">
+                {% for conta in contas_atrasadas %}
+                <li class="p-4 hover:bg-red-50 transition">
+                    <div class="flex justify-between mb-1">
+                        <span class="font-bold text-gray-800 text-sm">{{ conta.cadastro.nome|default:"Sem nome" }}</span>
+                        <span class="font-bold text-red-600 text-sm">{{ conta.valor|br_currency }}</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500">
+                        <span>{{ conta.descricao|truncatechars:20 }}</span>
+                        <span class="text-red-500 font-bold">Venc: {{ conta.data_vencimento|date:"d/m" }}</span>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="p-6 text-center text-gray-500">
+                    <i class="fa fa-smile text-4xl mb-2 text-green-400 block"></i>
+                    Nenhuma conta em atraso.
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{ grafico_labels|json_script:"grafico_labels" }}
+{{ grafico_receita|json_script:"grafico_receita" }}
+{{ grafico_despesa|json_script:"grafico_despesa" }}
+<script>
+    const ctx = document.getElementById('financeChart').getContext('2d');
+    
+    // Dados injetados pelo Django (lidos de elementos <script type="application/json"> gerados por json_script)
+    const labels = JSON.parse(document.getElementById('grafico_labels').textContent);
+    const dadosReceita = JSON.parse(document.getElementById('grafico_receita').textContent);
+    const dadosDespesa = JSON.parse(document.getElementById('grafico_despesa').textContent);
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Receitas',
+                data: dadosReceita,
+                backgroundColor: 'rgba(34, 197, 94, 0.7)', // Green
+                borderColor: 'rgba(34, 197, 94, 1)',
+                borderWidth: 1,
+                borderRadius: 4,
+            },
+            {
+                label: 'Despesas',
+                data: dadosDespesa,
+                backgroundColor: 'rgba(239, 68, 68, 0.7)', // Red
+                borderColor: 'rgba(239, 68, 68, 1)',
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
+                x: { grid: { display: false } }
+            },
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

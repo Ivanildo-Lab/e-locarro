@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+{% load currency_filters %}
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Vendas - {{ empresa.nome }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @media print {
+            body { -webkit-print-color-adjust: exact; font-size: 9pt; }
+            .no-print { display: none !important; }
+            @page { margin: 1cm; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 print:bg-white print:p-0 text-gray-800 font-sans">
+
+    <div class="max-w-6xl mx-auto bg-white shadow-lg print:shadow-none print:w-full min-h-screen relative pb-10">
+
+        <!-- CABEÇALHO -->
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-start">
+            <div class="flex items-center gap-3">
+                {% if empresa.logo %}
+                    <img src="{{ empresa.logo.url }}" class="h-10 w-auto object-contain">
+                {% else %}
+                    <div class="h-10 w-10 bg-gray-800 text-white flex items-center justify-center font-bold rounded text-lg">
+                        {{ empresa.nome|slice:":1" }}
+                    </div>
+                {% endif %}
+                <div>
+                    <h1 class="text-lg font-bold uppercase tracking-wide text-gray-800 leading-tight">{{ empresa.nome }}</h1>
+                    <p class="text-[10px] text-gray-500">CNPJ: {{ empresa.cnpj }}</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <h2 class="text-base font-semibold text-gray-700">Relatório de Vendas</h2>
+                <p class="text-[10px] text-gray-400 mt-0.5">Emitido em {% now "d/m/Y H:i" %}</p>
+            </div>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="px-6 py-2 bg-gray-50 border-b border-gray-200 flex flex-wrap gap-6 text-xs print:bg-gray-50">
+            {% if filtro_data_inicio or filtro_data_fim %}
+            <div>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Período:</span>
+                <span class="font-semibold text-gray-700 ml-1">
+                    {% if filtro_data_inicio %}{{ filtro_data_inicio }}{% else %}Início{% endif %}
+                    a {% if filtro_data_fim %}{{ filtro_data_fim }}{% else %}Hoje{% endif %}
+                </span>
+            </div>
+            {% endif %}
+            <div>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Status:</span>
+                <span class="font-semibold text-gray-700 ml-1">
+                    {% if filtro_status == 'PENDENTE' %}Pendente{% elif filtro_status == 'PAGO' %}Pago{% elif filtro_status == 'CANCELADO' %}Cancelado{% else %}Todos{% endif %}
+                </span>
+            </div>
+            <div>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Pagamento:</span>
+                <span class="font-semibold text-gray-700 ml-1">
+                    {% if filtro_pagamento == 'AVISTA' %}À Vista{% elif filtro_pagamento == 'CARTAO_CREDITO' %}Cartão Crédito{% elif filtro_pagamento == 'FINANCIADO' %}Financiado{% elif filtro_pagamento == 'CREDIARIO' %}Crediário{% else %}Todos{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="p-6">
+
+            <!-- RESUMO -->
+            <div class="grid grid-cols-4 gap-3 mb-5">
+                <div class="bg-gray-50 border border-gray-200 rounded p-3 text-center">
+                    <div class="text-[9px] text-gray-400 uppercase font-bold">Total Vendas</div>
+                    <div class="text-2xl font-bold text-gray-800">{{ total_vendas }}</div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded p-3 text-center">
+                    <div class="text-[9px] text-green-500 uppercase font-bold">Valor Total</div>
+                    <div class="text-lg font-bold text-green-700">{{ total_valor|br_currency }}</div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded p-3 text-center">
+                    <div class="text-[9px] text-blue-500 uppercase font-bold">Entradas</div>
+                    <div class="text-lg font-bold text-blue-700">{{ total_entrada|br_currency }}</div>
+                </div>
+                <div class="bg-purple-50 border border-purple-200 rounded p-3 text-center">
+                    <div class="text-[9px] text-purple-500 uppercase font-bold">Financiado</div>
+                    <div class="text-lg font-bold text-purple-700">{{ total_financeado|br_currency }}</div>
+                </div>
+            </div>
+
+            <!-- STATUS -->
+            <div class="flex gap-4 mb-5 text-[10px]">
+                <span class="text-yellow-600 font-bold">{{ qtd_pendente }} Pendente(s)</span>
+                <span class="text-green-600 font-bold">{{ qtd_pago }} Pago(s)</span>
+                <span class="text-red-600 font-bold">{{ qtd_cancelado }} Cancelado(s)</span>
+            </div>
+
+            <!-- TABELA -->
+            <table class="w-full text-[10px]">
+                <thead>
+                    <tr class="text-[9px] text-gray-400 uppercase border-b border-gray-300">
+                        <th class="py-1 text-left font-medium w-24">Nº Contrato</th>
+                        <th class="py-1 text-left font-medium">Cliente</th>
+                        <th class="py-1 text-left font-medium">Veículo</th>
+                        <th class="py-1 text-center font-medium w-20">Data</th>
+                        <th class="py-1 text-center font-medium w-28">Pagamento</th>
+                        <th class="py-1 text-left font-medium w-28">Vendedor</th>
+                        <th class="py-1 text-center font-medium w-16">Status</th>
+                        <th class="py-1 text-right font-medium w-28">Valor</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for v in vendas %}
+                    <tr>
+                        <td class="py-1 font-mono font-bold text-gray-800">{{ v.numero_contrato }}</td>
+                        <td class="py-1 font-bold text-gray-800">{{ v.cliente.nome }}</td>
+                        <td class="py-1 text-gray-600">{{ v.veiculo.marca }} {{ v.veiculo.modelo }}</td>
+                        <td class="py-1 text-center text-gray-600 font-mono">{{ v.data_venda|date:"d/m/Y" }}</td>
+                        <td class="py-1 text-center">
+                            <span class="text-[9px] font-bold {% if v.forma_pagamento == 'AVISTA' or v.forma_pagamento == 'PIX' %}text-green-600{% elif v.forma_pagamento == 'CARTAO_CREDITO' %}text-blue-600{% elif v.forma_pagamento == 'FINANCIADO' or v.forma_pagamento == 'CREDIARIO' %}text-orange-600{% else %}text-gray-600{% endif %}">
+                                {{ v.get_forma_pagamento_display }}
+                            </span>
+                        </td>
+                        <td class="py-1 text-gray-600">{% if v.vendedor %}{{ v.vendedor.nome }}{% else %}-{% endif %}</td>
+                        <td class="py-1 text-center">
+                            {% if v.status == 'PENDENTE' %}
+                                <span class="text-yellow-600 font-bold text-[9px]">PENDENTE</span>
+                            {% elif v.status == 'PAGO' %}
+                                <span class="text-green-600 font-bold text-[9px]">PAGO</span>
+                            {% else %}
+                                <span class="text-red-600 font-bold text-[9px]">CANCELADO</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-1 text-right font-bold text-gray-700">{{ v.valor_venda|br_currency }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="py-4 text-center text-gray-400 italic">Nenhum registro encontrado.</td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="border-t border-gray-300 bg-gray-50">
+                        <td colspan="5" class="py-2 text-right text-[10px] font-bold text-gray-600 uppercase pr-4">Total Geral:</td>
+                        <td colspan="2"></td>
+                        <td class="py-2 text-right font-bold text-[10px] text-gray-800">{{ total_valor|br_currency }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+        </div>
+
+        <!-- Botões Flutuantes -->
+        <div class="fixed bottom-8 right-8 no-print flex gap-3">
+            <a href="{% url 'locacao:lista_vendas' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-full shadow-lg flex items-center border border-gray-400 text-xs">
+                <i class="fas fa-arrow-left mr-2"></i> Voltar
+            </a>
+            <button onclick="window.print()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-full shadow-lg flex items-center border border-gray-600 text-xs">
+                <i class="fas fa-print mr-2"></i> Imprimir
+            </button>
+        </div>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block titulo_cabecalho %}Nova Venda{% endblock %}
+{% block subtitulo_cabecalho %}Dados da venda{% endblock %}
+{% block breadcrumb %}Formulário{% endblock %}
+
+{% block content %}
+<form role="form" method="post" id="vendaForm">
+    {% csrf_token %}
+    
+    {% if form.errors %}
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0"><i class="fa fa-exclamation-circle text-red-500"></i></div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Erros encontrados:</h3>
+                <ul class="list-disc list-inside text-sm text-red-700 mt-1">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li><b>{{ field|capfirst }}:</b> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- COLUNA PRINCIPAL -->
+        <div class="lg:col-span-9 space-y-6">
+            
+            <!-- CAIXA 1: DADOS DA VENDA -->
+            <div class="bg-white rounded shadow border-t-4 border-blue-500">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700"><i class="fa fa-file-invoice-dollar mr-2"></i>Dados da Venda</h3>
+                </div>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-12 gap-4">
+                    
+                    <div class="md:col-span-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.cliente.label }}</label>
+                        {{ form.cliente }}
+                    </div>
+                    
+                    <div class="md:col-span-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.veiculo.label }}</label>
+                        {{ form.veiculo }}
+                    </div>
+
+                    <div class="md:col-span-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.data_venda.label }}</label>
+                        {{ form.data_venda }}
+                    </div>
+                    
+                    <div class="md:col-span-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.km_venda.label }}</label>
+                        {{ form.km_venda }}
+                    </div>
+
+                    <div class="md:col-span-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.vendedor.label }}</label>
+                        {{ form.vendedor }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- CAIXA 2: PAGAMENTO -->
+            <div class="bg-white rounded shadow border-t-4 border-green-500">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700"><i class="fa fa-credit-card mr-2"></i>Pagamento</h3>
+                </div>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-12 gap-4">
+                    
+                    <div class="md:col-span-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.forma_pagamento.label }}</label>
+                        {{ form.forma_pagamento }}
+                    </div>
+
+                    <div class="md:col-span-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.valor_venda.label }}</label>
+                        {{ form.valor_venda }}
+                    </div>
+
+                    <div class="md:col-span-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.valor_entrada.label }}</label>
+                        {{ form.valor_entrada }}
+                    </div>
+
+                    <!-- Parcelas (aparece se NÃO for à vista) -->
+                    <div id="parcelas-section" class="md:col-span-12 grid grid-cols-1 md:grid-cols-12 gap-4 p-4 bg-gray-50 rounded border border-gray-200">
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.parcelas.label }}</label>
+                            {{ form.parcelas }}
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.data_vencimento_primeira.label }}</label>
+                            {{ form.data_vencimento_primeira }}
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Valor Financiado</label>
+                            <input type="text" id="valor-financeado" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" readonly>
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Valor Parcela</label>
+                            <input type="text" id="valor-parcela-display" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 font-bold text-green-700" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CAIXA 3: OBSERVAÇÕES -->
+            <div class="bg-white rounded shadow border-t-4 border-gray-400">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700"><i class="fa fa-sticky-note mr-2"></i>Observações</h3>
+                </div>
+                <div class="p-6">
+                    {{ form.observacoes }}
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA LATERAL -->
+        <div class="lg:col-span-3 space-y-6">
+            <!-- RESUMO -->
+            <div class="bg-white rounded shadow border-t-4 border-yellow-500">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700"><i class="fa fa-calculator mr-2"></i>Resumo</h3>
+                </div>
+                <div class="p-6 space-y-3">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Valor da Venda:</span>
+                        <span id="resumo-valor-venda" class="font-bold text-gray-800">R$ 0,00</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Entrada:</span>
+                        <span id="resumo-entrada" class="font-bold text-gray-800">R$ 0,00</span>
+                    </div>
+                    <hr class="border-gray-200">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Financiado:</span>
+                        <span id="resumo-financeado" class="font-bold text-blue-700">R$ 0,00</span>
+                    </div>
+                    <div id="resumo-parcelas-info" class="hidden">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Parcelas:</span>
+                            <span id="resumo-qtd-parcelas" class="text-gray-800">1x</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Cada parcela:</span>
+                            <span id="resumo-valor-parcela" class="font-bold text-green-700">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTÕES -->
+    <div class="mt-6 bg-white p-4 rounded shadow border-t border-gray-200 flex justify-start space-x-4">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow transition">
+            <i class="fa fa-save mr-2"></i> Registrar Venda
+        </button>
+        <a href="{% url url_cancelar %}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-6 rounded shadow transition">
+            Cancelar
+        </a>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    var veiculosData = {{ veiculos_data|safe }};
+
+    function formatCurrency(value) {
+        return 'R$ ' + parseFloat(value).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function parseCurrency(str) {
+        if (!str) return 0;
+        return parseFloat(str.replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
+    }
+
+    function toggleParcelas() {
+        var forma = $('#id_forma_pagamento').val();
+        var isAVista = (forma === 'AVISTA' || forma === 'PIX' || forma === 'CARTAO_DEBITO' || forma === 'PERMUTA');
+        
+        if (isAVista) {
+            $('#parcelas-section').addClass('hidden');
+            $('#resumo-parcelas-info').addClass('hidden');
+        } else {
+            $('#parcelas-section').removeClass('hidden');
+            $('#resumo-parcelas-info').removeClass('hidden');
+        }
+        atualizarResumo();
+    }
+
+    function atualizarResumo() {
+        var valorVenda = parseCurrency($('#id_valor_venda').val());
+        var valorEntrada = parseCurrency($('#id_valor_entrada').val()) || 0;
+        var parcelas = parseInt($('#id_parcelas').val()) || 1;
+
+        var valorFinanciado = valorVenda - valorEntrada;
+        if (valorFinanciado < 0) valorFinanciado = 0;
+
+        var valorParcela = parcelas > 0 ? valorFinanciado / parcelas : 0;
+
+        $('#resumo-valor-venda').text(formatCurrency(valorVenda));
+        $('#resumo-entrada').text(formatCurrency(valorEntrada));
+        $('#resumo-financeado').text(formatCurrency(valorFinanciado));
+        $('#resumo-qtd-parcelas').text(parcelas + 'x');
+        $('#resumo-valor-parcela').text(formatCurrency(valorParcela));
+        
+        $('#valor-financeado').val(formatCurrency(valorFinanciado));
+        $('#valor-parcela-display').val(formatCurrency(valorParcela));
+    }
+
+    // Preenche valor de venda e KM ao selecionar veículo
+    $('#id_veiculo').on('change', function() {
+        var veiculoId = $(this).val();
+        if (veiculoId && veiculosData[veiculoId]) {
+            var dados = veiculosData[veiculoId];
+            $('#id_valor_venda').val(dados.valor_venda);
+            $('#id_km_venda').val(dados.km_atual);
+            atualizarResumo();
+        }
+    });
+
+    $('#id_forma_pagamento').change(toggleParcelas);
+    $('#id_valor_venda, #id_valor_entrada, #id_parcelas').on('input', atualizarResumo);
+
+    toggleParcelas();
+    atualizarResumo();
+});
+</script>
+{% endblock %}

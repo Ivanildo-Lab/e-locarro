@@ -21,8 +21,6 @@ env_path = BASE_DIR / '.env'
 load_dotenv(env_path)
 
 print(f"O Django está rodando em: {BASE_DIR}")
-print(f"Arquivo .env existe: {env_path.exists()}")
-print(f"DB_HOST lido: {os.getenv('DB_HOST', 'NAO_ENCONTRADO')}")
 
 
 # Quick-start development settings - unsuitable for production

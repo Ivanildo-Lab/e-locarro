@@ -17,10 +17,12 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(BASE_DIR / '.env')
+env_path = BASE_DIR / '.env'
+load_dotenv(env_path)
 
 print(f"O Django está rodando em: {BASE_DIR}")
-print(f"A pasta templates deve ser: {os.path.join(BASE_DIR, 'templates')}")
+print(f"Arquivo .env existe: {env_path.exists()}")
+print(f"DB_HOST lido: {os.getenv('DB_HOST', 'NAO_ENCONTRADO')}")
 
 
 # Quick-start development settings - unsuitable for production

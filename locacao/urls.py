@@ -32,6 +32,17 @@ urlpatterns = [
     # MANUTENÇÕES
     path('manutencoes/', views.lista_manutencoes, name='lista_manutencoes'),
     path('manutencoes/nova/', views.nova_manutencao, name='nova_manutencao'),
+    path('manutencoes/editar/<int:id>/', views.editar_manutencao, name='editar_manutencao'),
+    path('manutencoes/excluir/<int:id>/', views.excluir_manutencao, name='excluir_manutencao'),
+
+    # PROGRAMAS DE MANUTENÇÃO
+    path('programas/', views.lista_programas, name='lista_programas'),
+    path('programas/novo/', views.novo_programa, name='novo_programa'),
+    path('programas/editar/<int:id>/', views.editar_programa, name='editar_programa'),
+    path('programas/excluir/<int:id>/', views.excluir_programa, name='excluir_programa'),
+
+    # ALERTAS
+    path('proximas-manutencoes/', views.proximas_manutencoes, name='proximas_manutencoes'),
 
     # VENDEDORES
     path('vendedores/', views.lista_vendedores, name='lista_vendedores'),
@@ -44,4 +55,5 @@ urlpatterns = [
     path('relatorios/vendas/', views.relatorio_vendas, name='relatorio_vendas'),
     path('relatorios/vendedores/', views.relatorio_vendedores, name='relatorio_vendedores'),
     path('relatorios/locacoes/', views.relatorio_locacoes, name='relatorio_locacoes'),
+    path('relatorios/manutencoes/', views.relatorio_manutencoes, name='relatorio_manutencoes'),
 ]

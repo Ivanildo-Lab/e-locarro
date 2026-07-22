@@ -410,21 +410,139 @@ class ContratoVenda(ModeloSaaS):
         ordering = ['-data_venda']
 
 
+class ProgramaManutencao(ModeloSaaS):
+    """Programa de manutenção preventiva por tipo de serviço."""
+    CICLO_CHOICES = [
+        ('KM', 'Por Quilometragem'),
+        ('TEMPO', 'Por Tempo (dias)'),
+        ('AMBOS', 'Por KM e Tempo'),
+    ]
+
+    tipo_veiculo = models.ForeignKey(
+        TipoVeiculo, on_delete=models.CASCADE, verbose_name="Tipo de Veículo"
+    )
+    tipo_servico = models.CharField(max_length=100, verbose_name="Tipo de Serviço")
+    descricao = models.TextField(blank=True, verbose_name="Descrição")
+    
+    ciclo = models.CharField(
+        max_length=5, choices=CICLO_CHOICES, default='KM',
+        verbose_name="Ciclo de Manutenção"
+    )
+    km_intervalo = models.IntegerField(
+        default=0, verbose_name="Intervalo KM",
+        help_text="Ex: 5000 para troca de óleo a cada 5.000 km"
+    )
+    dias_intervalo = models.IntegerField(
+        default=0, verbose_name="Intervalo Dias",
+        help_text="Ex: 180 para troca de óleo a cada 6 meses"
+    )
+    
+    valor_estimado = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name="Valor Estimado (R$)"
+    )
+    ativo = models.BooleanField(default=True, verbose_name="Ativo")
+    observacoes = models.TextField(blank=True, verbose_name="Observações")
+
+    def __str__(self):
+        return f"{self.tipo_servico} - {self.tipo_veiculo.nome}"
+
+    class Meta:
+        verbose_name = "Programa de Manutenção"
+        verbose_name_plural = "Programas de Manutenção"
+        ordering = ['tipo_veiculo', 'tipo_servico']
+
+
 class ManutencaoVeiculo(ModeloSaaS):
     """Histórico de manutenções dos veículos."""
+    STATUS_CHOICES = [
+        ('PENDENTE', 'Pendente'),
+        ('EM_ANDAMENTO', 'Em Andamento'),
+        ('CONCLUIDA', 'Concluída'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+
     veiculo = models.ForeignKey(
         Veiculo, on_delete=models.CASCADE, verbose_name="Veículo"
     )
+    
+    # Programa de manutenção (opcional - se veio de um programa preventivo)
+    programa = models.ForeignKey(
+        ProgramaManutencao, on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name="Programa de Manutenção"
+    )
+    
+    # Dados da manutenção
+    tipo_servico = models.CharField(max_length=100, verbose_name="Tipo de Serviço")
+    descricao = models.TextField(verbose_name="Descrição do Serviço")
+    status = models.CharField(
+        max_length=12, choices=STATUS_CHOICES, default='PENDENTE',
+        verbose_name="Status"
+    )
+    
+    # Datas
     data_entrada = models.DateField(verbose_name="Data Entrada")
     data_saida = models.DateField(
         null=True, blank=True, verbose_name="Data Saída"
     )
-    tipo_servico = models.CharField(max_length=100, verbose_name="Tipo de Serviço")
-    descricao = models.TextField(verbose_name="Descrição do Serviço")
+    
+    # KM
+    km_na_manutencao = models.IntegerField(
+        default=0, verbose_name="KM na Manutenção",
+        help_text="KM registrado no momento da manutenção"
+    )
+    proximo_km_manutencao = models.IntegerField(
+        default=0, verbose_name="Próximo KM de Manutenção",
+        help_text="KM previsto para a próxima manutenção deste tipo"
+    )
+    
+    # Valores
     valor = models.DecimalField(
         max_digits=10, decimal_places=2, verbose_name="Valor (R$)"
     )
-    oficina = models.CharField(max_length=200, blank=True, verbose_name="Oficina/Mecânico")
+    desconto = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name="Desconto (R$)"
+    )
+    valor_total = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name="Valor Total (R$)", editable=False
+    )
+    
+    # Prestador de serviço
+    oficina = models.CharField(max_length=200, verbose_name="Oficina/Mecânico")
+    contato_oficina = models.CharField(
+        max_length=50, blank=True, verbose_name="Contato da Oficina"
+    )
+    
+    # Peças utilizadas
+    pecas_utilizadas = models.TextField(
+        blank=True, verbose_name="Peças Utilizadas",
+        help_text="Liste as peças utilizadas nesta manutenção"
+    )
+    
+    # Nota Fiscal
+    numero_nota_fiscal = models.CharField(
+        max_length=30, blank=True, verbose_name="Nº Nota Fiscal"
+    )
+    
+    # Garantia
+    garantia_servico = models.BooleanField(
+        default=False, verbose_name="Serviço com Garantia"
+    )
+    garantia_ate = models.DateField(
+        null=True, blank=True, verbose_name="Garantia até"
+    )
+    garantia_km = models.IntegerField(
+        default=0, verbose_name="Garantia até KM"
+    )
+    
+    # Observações
+    observacoes = models.TextField(blank=True, verbose_name="Observações")
+
+    def save(self, *args, **kwargs):
+        self.valor_total = self.valor - self.desconto
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.veiculo} - {self.tipo_servico} ({self.data_entrada})"

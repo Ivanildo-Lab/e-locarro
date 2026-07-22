@@ -1,5 +1,5 @@
 from django import forms
-from .models import TipoVeiculo, Veiculo, ContratoLocacao, ContratoVenda, ManutencaoVeiculo, Vendedor
+from .models import TipoVeiculo, Veiculo, ContratoLocacao, ContratoVenda, ManutencaoVeiculo, Vendedor, ProgramaManutencao
 from cadastros.models import Cadastro
 
 
@@ -181,11 +181,14 @@ class ManutencaoVeiculoForm(forms.ModelForm):
     class Meta:
         model = ManutencaoVeiculo
         fields = '__all__'
-        exclude = ['empresa']
+        exclude = ['empresa', 'programa']
         widgets = {
             'data_entrada': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
             'data_saida': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
             'descricao': forms.Textarea(attrs={'rows': 3}),
+            'pecas_utilizadas': forms.Textarea(attrs={'rows': 3}),
+            'observacoes': forms.Textarea(attrs={'rows': 3}),
+            'garantia_ate': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -195,11 +198,44 @@ class ManutencaoVeiculoForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             if isinstance(field.widget, forms.Textarea):
                 field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors'
+            elif isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
             else:
                 field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors'
 
         if self.user:
             self.fields['veiculo'].queryset = Veiculo.objects.filter(
+                empresa=self.user.empresa
+            )
+            self.fields['programa'].queryset = ProgramaManutencao.objects.filter(
+                empresa=self.user.empresa, ativo=True
+            )
+
+
+class ProgramaManutencaoForm(forms.ModelForm):
+    class Meta:
+        model = ProgramaManutencao
+        fields = '__all__'
+        exclude = ['empresa', 'ativo']
+        widgets = {
+            'descricao': forms.Textarea(attrs={'rows': 3}),
+            'observacoes': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.Textarea):
+                field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors'
+            elif isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+            else:
+                field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors'
+
+        if self.user:
+            self.fields['tipo_veiculo'].queryset = TipoVeiculo.objects.filter(
                 empresa=self.user.empresa
             )
 

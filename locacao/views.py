@@ -5,10 +5,11 @@ from django.db.models import Q
 from django.utils import timezone
 from decimal import Decimal
 
-from .models import TipoVeiculo, Veiculo, ContratoLocacao, ContratoVenda, ManutencaoVeiculo, Vendedor, ComissaoVendedor
+from .models import TipoVeiculo, Veiculo, ContratoLocacao, ContratoVenda, ManutencaoVeiculo, Vendedor, ComissaoVendedor, ProgramaManutencao
 from .forms import (
     TipoVeiculoForm, VeiculoForm, ContratoLocacaoForm,
-    DevolucaoForm, ContratoVendaForm, ManutencaoVeiculoForm, VendedorForm
+    DevolucaoForm, ContratoVendaForm, ManutencaoVeiculoForm, VendedorForm,
+    ProgramaManutencaoForm
 )
 from financeiro.models import Conta, PlanoDeContas, Lancamento, Caixa
 
@@ -601,8 +602,12 @@ def lista_manutencoes(request):
     qs = ManutencaoVeiculo.objects.filter(empresa=request.user.empresa)
 
     veiculo_id = request.GET.get('veiculo')
+    status = request.GET.get('status')
+
     if veiculo_id:
         qs = qs.filter(veiculo_id=veiculo_id)
+    if status:
+        qs = qs.filter(status=status)
 
     veiculos = Veiculo.objects.filter(empresa=request.user.empresa)
 
@@ -610,6 +615,7 @@ def lista_manutencoes(request):
         'manutencoes': qs,
         'veiculos': veiculos,
         'filtro_veiculo': veiculo_id,
+        'filtro_status': status,
     })
 
 
@@ -621,13 +627,216 @@ def nova_manutencao(request):
             obj = form.save(commit=False)
             obj.empresa = request.user.empresa
             obj.save()
-            messages.success(request, "Manutenção registrada com sucesso!")
+            messages.success(request, "Manutencao registrada com sucesso!")
             return redirect('locacao:lista_manutencoes')
     else:
         form = ManutencaoVeiculoForm(user=request.user)
     return render(request, 'locacao/formulario_simples.html', {
-        'form': form, 'titulo': 'Nova Manutenção',
+        'form': form, 'titulo': 'Nova Manutencao',
         'url_cancelar': 'locacao:lista_manutencoes'
+    })
+
+
+@login_required
+def editar_manutencao(request, id):
+    obj = get_object_or_404(ManutencaoVeiculo, id=id, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = ManutencaoVeiculoForm(request.POST, instance=obj, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Manutencao atualizada!")
+            return redirect('locacao:lista_manutencoes')
+    else:
+        form = ManutencaoVeiculoForm(instance=obj, user=request.user)
+    return render(request, 'locacao/formulario_simples.html', {
+        'form': form, 'titulo': 'Editar Manutencao',
+        'url_cancelar': 'locacao:lista_manutencoes'
+    })
+
+
+@login_required
+def excluir_manutencao(request, id):
+    obj = get_object_or_404(ManutencaoVeiculo, id=id, empresa=request.user.empresa)
+    if request.method == 'POST':
+        obj.delete()
+        messages.success(request, "Manutencao excluida!")
+        return redirect('locacao:lista_manutencoes')
+    return render(request, 'locacao/confirmar_exclusao.html', {
+        'obj': obj, 'url_cancelar': 'locacao:lista_manutencoes'
+    })
+
+
+# ==========================================================
+# 5.1 PROGRAMAS DE MANUTENCAO PREVENTIVA
+# ==========================================================
+@login_required
+def lista_programas(request):
+    qs = ProgramaManutencao.objects.filter(empresa=request.user.empresa)
+    tipo_veiculo_id = request.GET.get('tipo_veiculo')
+    if tipo_veiculo_id:
+        qs = qs.filter(tipo_veiculo_id=tipo_veiculo_id)
+    tipos_veiculo = TipoVeiculo.objects.filter(empresa=request.user.empresa)
+    return render(request, 'locacao/programa_lista.html', {
+        'programas': qs,
+        'tipos_veiculo': tipos_veiculo,
+        'filtro_tipo_veiculo': tipo_veiculo_id,
+    })
+
+
+@login_required
+def novo_programa(request):
+    if request.method == 'POST':
+        form = ProgramaManutencaoForm(request.POST, user=request.user)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.empresa = request.user.empresa
+            obj.save()
+            messages.success(request, "Programa de manutencao criado com sucesso!")
+            return redirect('locacao:lista_programas')
+    else:
+        form = ProgramaManutencaoForm(user=request.user)
+    return render(request, 'locacao/formulario_simples.html', {
+        'form': form, 'titulo': 'Novo Programa de Manutencao',
+        'url_cancelar': 'locacao:lista_programas'
+    })
+
+
+@login_required
+def editar_programa(request, id):
+    obj = get_object_or_404(ProgramaManutencao, id=id, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = ProgramaManutencaoForm(request.POST, instance=obj, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Programa atualizado!")
+            return redirect('locacao:lista_programas')
+    else:
+        form = ProgramaManutencaoForm(instance=obj, user=request.user)
+    return render(request, 'locacao/formulario_simples.html', {
+        'form': form, 'titulo': 'Editar Programa de Manutencao',
+        'url_cancelar': 'locacao:lista_programas'
+    })
+
+
+@login_required
+def excluir_programa(request, id):
+    obj = get_object_or_404(ProgramaManutencao, id=id, empresa=request.user.empresa)
+    if request.method == 'POST':
+        obj.delete()
+        messages.success(request, "Programa excluido!")
+        return redirect('locacao:lista_programas')
+    return render(request, 'locacao/confirmar_exclusao.html', {
+        'obj': obj, 'url_cancelar': 'locacao:lista_programas'
+    })
+
+
+# ==========================================================
+# 5.2 PROXIMAS MANUTENCOES (ALERTAS)
+# ==========================================================
+@login_required
+def proximas_manutencoes(request):
+    empresa = request.user.empresa
+    from datetime import timedelta
+    hoje = timezone.now().date()
+
+    veiculos = Veiculo.objects.filter(empresa=empresa)
+    alertas = []
+
+    for veiculo in veiculos:
+        programas = ProgramaManutencao.objects.filter(
+            empresa=empresa, tipo_veiculo=veiculo.grupo, ativo=True
+        )
+        for programa in programas:
+            ultima = ManutencaoVeiculo.objects.filter(
+                empresa=empresa, veiculo=veiculo,
+                tipo_servico__icontains=programa.tipo_servico
+            ).order_by('-data_entrada').first()
+
+            km_atual = veiculo.km_atual
+            if not ultima:
+                continue
+
+            proximo_km = 0
+            km_restante = 999999
+            proxima_data = None
+            dias_restante = 999999
+
+            if programa.km_intervalo > 0:
+                proximo_km = ultima.km_na_manutencao + programa.km_intervalo
+                km_restante = proximo_km - km_atual
+
+            if programa.dias_intervalo > 0:
+                proxima_data = ultima.data_entrada + timedelta(days=programa.dias_intervalo)
+                dias_restante = (proxima_data - hoje).days
+
+            eh_proximo_km = 0 <= km_restante <= 500
+            eh_proximo_tempo = proxima_data and 0 <= dias_restante <= 30
+            eh_vencido = km_restante < 0 or (proxima_data and dias_restante < 0)
+
+            if eh_proximo_km or eh_proximo_tempo or eh_vencido:
+                alertas.append({
+                    'veiculo': veiculo,
+                    'programa': programa,
+                    'ultima_manutencao': ultima,
+                    'km_atual': km_atual,
+                    'proximo_km': proximo_km,
+                    'km_restante': km_restante,
+                    'proxima_data': proxima_data,
+                    'dias_restante': dias_restante,
+                    'status': 'VENCIDO' if eh_vencido else 'PROXIMO',
+                    'tipo_alerta': 'KM' if eh_vencido or eh_proximo_km else 'DATA',
+                })
+
+    alertas.sort(key=lambda x: (0 if x['status'] == 'VENCIDO' else 1, x['km_restante']))
+    return render(request, 'locacao/proximas_manutencoes.html', {'alertas': alertas})
+
+
+# ==========================================================
+# 5.3 RELATORIO DE MANUTENCOES
+# ==========================================================
+@login_required
+def relatorio_manutencoes(request):
+    empresa = request.user.empresa
+    data_inicio = request.GET.get('data_inicio')
+    data_fim = request.GET.get('data_fim')
+    veiculo_id = request.GET.get('veiculo')
+    tipo_servico = request.GET.get('tipo_servico')
+
+    qs = ManutencaoVeiculo.objects.filter(empresa=empresa)
+
+    if data_inicio:
+        qs = qs.filter(data_entrada__gte=data_inicio)
+    if data_fim:
+        qs = qs.filter(data_entrada__lte=data_fim)
+    if veiculo_id:
+        qs = qs.filter(veiculo_id=veiculo_id)
+    if tipo_servico:
+        qs = qs.filter(tipo_servico__icontains=tipo_servico)
+
+    from django.db.models import Sum, Count
+
+    total_manutencoes = qs.count()
+    valor_total = qs.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
+    valor_medio = valor_total / total_manutencoes if total_manutencoes > 0 else 0
+
+    por_tipo = qs.values('tipo_servico').annotate(
+        total=Count('id'), valor=Sum('valor_total')
+    ).order_by('-valor')
+
+    por_oficina = qs.exclude(oficina='').values('oficina').annotate(
+        total=Count('id'), valor=Sum('valor_total')
+    ).order_by('-valor')
+
+    veiculos = Veiculo.objects.filter(empresa=empresa)
+
+    return render(request, 'locacao/relatorio_manutencoes.html', {
+        'manutencoes': qs,
+        'total_manutencoes': total_manutencoes,
+        'valor_total': valor_total,
+        'valor_medio': valor_medio,
+        'por_tipo': por_tipo,
+        'por_oficina': por_oficina,
+        'veiculos': veiculos,
     })
 
 

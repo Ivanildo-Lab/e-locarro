@@ -91,8 +91,18 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'locacao:lista_manutencoes' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-red-400 {% if 'manutencoes' in request.path %}text-white font-bold{% endif %}">
-                                <i class="fa fa-wrench mr-2 w-3 text-red-400"></i> Manutenções
+                            <a href="{% url 'locacao:lista_manutencoes' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-red-400 {% if 'manutencoes' in request.path and 'proximas' not in request.path and 'relatorio_manutencoes' not in request.path %}text-white font-bold{% endif %}">
+                                <i class="fa fa-wrench mr-2 w-3 text-red-400"></i> Manutencoes
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'locacao:lista_programas' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-orange-400 {% if 'programas' in request.path %}text-white font-bold{% endif %}">
+                                <i class="fa fa-cogs mr-2 w-3 text-orange-400"></i> Programas Preventivos
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'locacao:proximas_manutencoes' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-yellow-400 {% if 'proximas' in request.path %}text-white font-bold{% endif %}">
+                                <i class="fa fa-bell mr-2 w-3 text-yellow-400"></i> Proximas Manutencoes
                             </a>
                         </li>
                         <li>
@@ -203,7 +213,12 @@
                         </li>
                         <li>
                             <a href="{% url 'locacao:relatorio_locacoes' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-blue-400">
-                                <i class="fa fa-car mr-2 w-3 text-blue-400"></i> Locações
+                                <i class="fa fa-car mr-2 w-3 text-blue-400"></i> Locacoes
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'locacao:relatorio_manutencoes' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-orange-400">
+                                <i class="fa fa-wrench mr-2 w-3 text-orange-400"></i> Manutencoes
                             </a>
                         </li>
 

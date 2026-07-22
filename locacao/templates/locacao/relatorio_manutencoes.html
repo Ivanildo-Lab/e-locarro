@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block titulo_cabecalho %}Relatorio de Manutencoes{% endblock %}
+{% block subtitulo_cabecalho %}Analise de Gastos com Manutencao{% endblock %}
+{% block breadcrumb %}Relatorio de Manutencoes{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Relatorio de Manutencoes</h1>
+        <p class="text-sm text-gray-500 mt-1">Analise de gastos por servico, veiculo e oficina</p>
+    </div>
+    <div class="flex gap-2">
+        <a href="{% url 'locacao:proximas_manutencoes' %}" class="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-4 py-2 rounded-lg shadow transition flex items-center gap-2">
+            <i class="fa fa-bell"></i> Proximas
+        </a>
+        <a href="{% url 'locacao:lista_manutencoes' %}" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg shadow transition flex items-center gap-2">
+            <i class="fa fa-list"></i> Lista Completa
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="bg-white rounded-lg shadow p-4 mb-6">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Data Inicio</label>
+            <input type="date" name="data_inicio" value="{{ request.GET.data_inicio }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Data Fim</label>
+            <input type="date" name="data_fim" value="{{ request.GET.data_fim }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Veiculo</label>
+            <select name="veiculo" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Todos</option>
+                {% for v in veiculos %}
+                <option value="{{ v.id }}" {% if request.GET.veiculo == v.id|stringformat:"d" %}selected{% endif %}>{{ v.marca }} {{ v.modelo }} ({{ v.placa }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Servico</label>
+            <input type="text" name="tipo_servico" value="{{ request.GET.tipo_servico }}" placeholder="Ex: Oleo" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">
+            <i class="fa fa-search mr-1"></i> Filtrar
+        </button>
+    </form>
+</div>
+
+<!-- Cards de Resumo -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl shadow-lg text-white p-5">
+        <p class="text-sm font-medium opacity-90">Total de Manutencoes</p>
+        <h3 class="text-3xl font-bold mt-1">{{ total_manutencoes }}</h3>
+    </div>
+    <div class="bg-gradient-to-br from-green-500 to-green-700 rounded-xl shadow-lg text-white p-5">
+        <p class="text-sm font-medium opacity-90">Valor Total</p>
+        <h3 class="text-3xl font-bold mt-1">{{ valor_total|br_currency }}</h3>
+    </div>
+    <div class="bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl shadow-lg text-white p-5">
+        <p class="text-sm font-medium opacity-90">Valor Medio</p>
+        <h3 class="text-3xl font-bold mt-1">{{ valor_medio|br_currency }}</h3>
+    </div>
+</div>
+
+<!-- Por Tipo de Servico -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <div class="bg-white rounded-xl shadow-lg border-t-4 border-blue-500">
+        <div class="p-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-700">
+                <i class="fa fa-cogs mr-2 text-blue-500"></i> Por Tipo de Servico
+            </h3>
+        </div>
+        <div class="p-0">
+            <ul class="divide-y divide-gray-100">
+                {% for item in por_tipo %}
+                <li class="p-4 hover:bg-gray-50 transition">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-semibold text-gray-800">{{ item.tipo_servico }}</p>
+                            <p class="text-xs text-gray-500">{{ item.total }} manutencoes</p>
+                        </div>
+                        <p class="font-bold text-blue-600">{{ item.valor|br_currency }}</p>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="p-6 text-center text-gray-400">Nenhum registro encontrado.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg border-t-4 border-green-500">
+        <div class="p-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-700">
+                <i class="fa fa-building mr-2 text-green-500"></i> Por Oficina
+            </h3>
+        </div>
+        <div class="p-0">
+            <ul class="divide-y divide-gray-100">
+                {% for item in por_oficina %}
+                <li class="p-4 hover:bg-gray-50 transition">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-semibold text-gray-800">{{ item.oficina }}</p>
+                            <p class="text-xs text-gray-500">{{ item.total }} servicos</p>
+                        </div>
+                        <p class="font-bold text-green-600">{{ item.valor|br_currency }}</p>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="p-6 text-center text-gray-400">Nenhum registro encontrado.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Detalhamento -->
+<div class="bg-white rounded-xl shadow-lg border-t-4 border-gray-500">
+    <div class="p-4 border-b border-gray-100">
+        <h3 class="text-lg font-semibold text-gray-700">
+            <i class="fa fa-list-alt mr-2 text-gray-500"></i> Detalhamento
+        </h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Data</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Veiculo</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Servico</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Oficina</th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-600">KM</th>
+                    <th class="px-4 py-3 text-right font-semibold text-gray-600">Valor</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for man in manutencoes %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-4 py-3 text-gray-600">{{ man.data_entrada|date:"d/m/Y" }}</td>
+                    <td class="px-4 py-3 font-medium text-gray-800">{{ man.veiculo.marca }} {{ man.veiculo.modelo }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ man.tipo_servico }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ man.oficina|default:"-" }}</td>
+                    <td class="px-4 py-3 text-center text-gray-600">{{ man.km_na_manutencao|floatformat:0 }}</td>
+                    <td class="px-4 py-3 text-right font-bold text-gray-800">{{ man.valor_total|br_currency }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-gray-400">Nenhuma manutencao encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

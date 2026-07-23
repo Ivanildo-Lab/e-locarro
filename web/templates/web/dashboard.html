@@ -360,7 +360,7 @@
 
     <!-- Manutenções Pendentes -->
     <div class="bg-white rounded-xl shadow-lg border-t-4 border-orange-500">
-        <div class="p-4 border-b border-gray-100">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center">
             <h3 class="text-lg font-semibold text-gray-700">
                 <i class="fa fa-wrench mr-2 text-orange-500"></i> Manutenções Pendentes
             </h3>
@@ -388,6 +388,114 @@
         </div>
     </div>
 </div>
+
+<!-- 5. MANUTENÇÃO PREVENTIVA: ALERTAS + CUSTOS -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Card: Alertas Vencidos -->
+    <div class="bg-gradient-to-br from-red-500 to-red-700 rounded-xl shadow-lg text-white relative overflow-hidden group">
+        <div class="p-5">
+            <p class="text-sm font-medium opacity-90">Manutenções Vencidas</p>
+            <h3 class="text-4xl font-bold mt-1">{{ total_alertas_vencidos }}</h3>
+            <p class="text-xs opacity-75 mt-1">Requer ação imediata</p>
+        </div>
+        <div class="absolute right-4 top-6 opacity-25 group-hover:scale-110 transition duration-300">
+            <i class="fa fa-exclamation-triangle text-6xl"></i>
+        </div>
+        <a href="{% url 'locacao:proximas_manutencoes' %}" class="block bg-black/20 text-center py-2 text-sm hover:bg-black/30 transition">
+            Ver Alertas <i class="fa fa-arrow-circle-right ml-1"></i>
+        </a>
+    </div>
+
+    <!-- Card: Próximas -->
+    <div class="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl shadow-lg text-white relative overflow-hidden group">
+        <div class="p-5">
+            <p class="text-sm font-medium opacity-90">Próximas Manutenções</p>
+            <h3 class="text-4xl font-bold mt-1">{{ total_alertas_proximos }}</h3>
+            <p class="text-xs opacity-75 mt-1">Próximos 30 dias ou 500 km</p>
+        </div>
+        <div class="absolute right-4 top-6 opacity-25 group-hover:scale-110 transition duration-300">
+            <i class="fa fa-clock text-6xl"></i>
+        </div>
+        <a href="{% url 'locacao:proximas_manutencoes' %}" class="block bg-black/20 text-center py-2 text-sm hover:bg-black/30 transition">
+            Ver Programação <i class="fa fa-arrow-circle-right ml-1"></i>
+        </a>
+    </div>
+
+    <!-- Card: Custo Mensal -->
+    <div class="bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl shadow-lg text-white relative overflow-hidden group">
+        <div class="p-5">
+            <p class="text-sm font-medium opacity-90">Custo Manutenção (Mês)</p>
+            <h3 class="text-3xl font-bold mt-1">{{ custo_manutencao_mes|br_currency }}</h3>
+            <p class="text-xs opacity-75 mt-1">Gastos com manutenções</p>
+        </div>
+        <div class="absolute right-4 top-6 opacity-25 group-hover:scale-110 transition duration-300">
+            <i class="fa fa-coins text-6xl"></i>
+        </div>
+        <a href="{% url 'locacao:relatorio_manutencoes' %}" class="block bg-black/20 text-center py-2 text-sm hover:bg-black/30 transition">
+            Ver Relatório <i class="fa fa-arrow-circle-right ml-1"></i>
+        </a>
+    </div>
+</div>
+
+<!-- 6. ALERTAS DETALHADOS DE MANUTENÇÃO -->
+{% if alertas_manutencao %}
+<div class="bg-white rounded-xl shadow-lg border-t-4 border-amber-500 mb-8">
+    <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-700">
+            <i class="fa fa-bell mr-2 text-amber-500"></i> Programação de Manutenções
+        </h3>
+        <a href="{% url 'locacao:proximas_manutencoes' %}" class="text-sm text-amber-600 hover:text-amber-800 font-medium">
+            Ver todas <i class="fa fa-arrow-right ml-1"></i>
+        </a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Veículo</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Serviço</th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-600">Status</th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-600">KM Restante</th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-600">Dias Restante</th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-600">Próxima Data</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for alerta in alertas_manutencao %}
+                <tr class="hover:bg-gray-50 transition {% if alerta.status == 'VENCIDO' %}bg-red-50{% endif %}">
+                    <td class="px-4 py-3">
+                        <div class="font-medium text-gray-800">{{ alerta.veiculo.marca }} {{ alerta.veiculo.modelo }}</div>
+                        <div class="text-xs text-gray-500">{{ alerta.veiculo.placa }}</div>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">{{ alerta.servico }}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-bold
+                            {% if alerta.status == 'VENCIDO' %}bg-red-100 text-red-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                            {% if alerta.status == 'VENCIDO' %}VENCIDO{% else %}PRÓXIMO{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="font-bold {% if alerta.km_restante < 0 %}text-red-600{% elif alerta.km_restante <= 500 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                            {{ alerta.km_restante|floatformat:0 }} km
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        {% if alerta.dias_restante < 999999 %}
+                        <span class="font-bold {% if alerta.dias_restante < 0 %}text-red-600{% elif alerta.dias_restante <= 30 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                            {{ alerta.dias_restante }} dias
+                        </span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-center text-gray-600">
+                        {% if alerta.proxima_data %}{{ alerta.proxima_data|date:"d/m/Y" }}{% else %}-{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

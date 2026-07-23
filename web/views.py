@@ -2,10 +2,10 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Q, Count
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, date
 from cadastros.models import Cadastro
 from financeiro.models import Lancamento, Conta
-from locacao.models import Veiculo, ContratoLocacao, ContratoVenda, Vendedor, ManutencaoVeiculo
+from locacao.models import Veiculo, ContratoLocacao, ContratoVenda, Vendedor, ManutencaoVeiculo, ProgramaManutencao
 
 # ==========================================
 # LANDING PAGE (Tela Inicial)
@@ -146,10 +146,65 @@ def dashboard(request):
         empresa=empresa, situacao='ATIVO'
     ).order_by('-valor_total_vendas')[:5]
 
-    # 9. MANUTENÇÕES PENDENTES
+    # 9. MANUTENCOES PENDENTES
     manutencoes_pendentes = ManutencaoVeiculo.objects.filter(
-        empresa=empresa, data_saida__isnull=True
+        empresa=empresa, status__in=['PENDENTE', 'EM_ANDAMENTO']
     ).select_related('veiculo')[:5]
+
+    # 10. ALERTAS DE MANUTENCAO PREVENTIVA
+    veiculos_empresa = Veiculo.objects.filter(empresa=empresa)
+    alertas_manutencao = []
+
+    for veiculo in veiculos_empresa:
+        programas = ProgramaManutencao.objects.filter(
+            empresa=empresa, tipo_veiculo=veiculo.grupo, ativo=True
+        )
+        for programa in programas:
+            ultima = ManutencaoVeiculo.objects.filter(
+                empresa=empresa, veiculo=veiculo,
+                tipo_servico__icontains=programa.tipo_servico
+            ).order_by('-data_entrada').first()
+
+            if not ultima:
+                continue
+
+            km_atual = veiculo.km_atual
+            km_restante = 999999
+            dias_restante = 999999
+            proximo_km = 0
+            proxima_data = None
+
+            if programa.km_intervalo > 0:
+                proximo_km = ultima.km_na_manutencao + programa.km_intervalo
+                km_restante = proximo_km - km_atual
+
+            if programa.dias_intervalo > 0:
+                proxima_data = ultima.data_entrada + timedelta(days=programa.dias_intervalo)
+                dias_restante = (proxima_data - hoje).days
+
+            eh_vencido = km_restante < 0 or (proxima_data and dias_restante < 0)
+            eh_proximo = (0 <= km_restante <= 500) or (proxima_data and 0 <= dias_restante <= 30)
+
+            if eh_vencido or eh_proximo:
+                alertas_manutencao.append({
+                    'veiculo': veiculo,
+                    'servico': programa.tipo_servico,
+                    'km_restante': km_restante,
+                    'dias_restante': dias_restante,
+                    'proxima_data': proxima_data,
+                    'status': 'VENCIDO' if eh_vencido else 'PROXIMO',
+                })
+
+    alertas_manutencao.sort(key=lambda x: (0 if x['status'] == 'VENCIDO' else 1, x['km_restante']))
+    total_alertas_vencidos = len([a for a in alertas_manutencao if a['status'] == 'VENCIDO'])
+    total_alertas_proximos = len([a for a in alertas_manutencao if a['status'] == 'PROXIMO'])
+
+    # 11. CUSTO MANUTENCAO MES
+    custo_manutencao_mes = ManutencaoVeiculo.objects.filter(
+        empresa=empresa,
+        data_entrada__month=mes_atual,
+        data_entrada__year=ano_atual
+    ).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
 
     context = {
         'total_clientes': total_clientes,
@@ -181,6 +236,10 @@ def dashboard(request):
         'top_vendedores': top_vendedores,
         # Manutenção
         'manutencoes_pendentes': manutencoes_pendentes,
+        'alertas_manutencao': alertas_manutencao[:10],
+        'total_alertas_vencidos': total_alertas_vencidos,
+        'total_alertas_proximos': total_alertas_proximos,
+        'custo_manutencao_mes': custo_manutencao_mes,
     }
     
     return render(request, 'web/dashboard.html', context)
